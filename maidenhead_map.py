@@ -130,10 +130,15 @@ def parse_cabrillo_grids(filename):
                         freq = parts[1]
                         band = freq_to_band(freq)
                         
-                        for part in parts:
-                            part = part.upper()
-                            if is_valid_grid(part):
-                                grids_by_band[band].append(part)
+                        # In Cabrillo QSO format, grid squares are typically in the exchange fields
+                        # Skip the first 6 fields: QSO:, freq, mode, date, time, mycall
+                        # Then look for grids in the remaining exchange fields
+                        exchange_fields = parts[6:]
+                        
+                        for field in exchange_fields:
+                            field = field.upper()
+                            if is_valid_grid(field):
+                                grids_by_band[band].append(field)
     except FileNotFoundError:
         print(f"File {filename} not found")
         return {}, callsign
