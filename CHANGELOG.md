@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-09-17
+
+### Added
+- Comprehensive amateur radio band support from 630m to 1mm (241 GHz)
+- Full HF band support: 630m, 160m, 80m, 60m, 40m, 30m, 20m, 17m, 15m, 12m, 10m
+- Extended VHF/UHF support: 6m, 2m, 1.25m, 70cm, 33cm, 23cm
+- Microwave band support: 13cm, 9cm, 6cm, 3cm, 1.25cm, 6mm, 4mm, 2.5mm, 2mm, 1mm
+- Cabrillo standard nomenclature compliance
+- Support for both frequency ranges and common discrete frequencies
+- Direct band name string parsing (e.g., "6M", "70CM", "23CM")
+
+### Enhanced
+- Improved frequency parsing with multiple format support
+- Better handling of contest log frequency formats
+- More accurate band identification for all amateur radio allocations
+
 ## [1.1.0] - 2025-09-17
 
 ### Added

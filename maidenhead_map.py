@@ -161,25 +161,127 @@ def is_valid_grid(grid):
     return False
 
 def freq_to_band(freq_str):
-    """Convert frequency string to band name"""
+    """Convert frequency string to band name using Cabrillo standard nomenclature"""
     try:
         freq = int(freq_str)
-        if freq == 50:
+        
+        # LF/MF bands
+        if 472 <= freq <= 479:
+            return "630m"
+        elif 1800 <= freq <= 2000:
+            return "160m"
+        elif 3500 <= freq <= 4000:
+            return "80m"
+        elif 5330 <= freq <= 5405:
+            return "60m"
+        elif 7000 <= freq <= 7300:
+            return "40m"
+        elif 10100 <= freq <= 10150:
+            return "30m"
+        elif 14000 <= freq <= 14350:
+            return "20m"
+        elif 18068 <= freq <= 18168:
+            return "17m"
+        elif 21000 <= freq <= 21450:
+            return "15m"
+        elif 24890 <= freq <= 24990:
+            return "12m"
+        elif 28000 <= freq <= 29700:
+            return "10m"
+        
+        # VHF bands
+        elif freq == 50 or (50000 <= freq <= 54000):
             return "6m"
-        elif freq == 144:
+        elif freq == 144 or (144000 <= freq <= 148000):
             return "2m"
-        elif freq == 222:
+        elif freq == 222 or (222000 <= freq <= 225000):
             return "1.25m"
-        elif freq == 432:
+        
+        # UHF bands
+        elif freq == 432 or (420000 <= freq <= 450000):
             return "70cm"
-        elif freq == 902 or freq == 903:
+        elif freq in [902, 903] or (902000 <= freq <= 928000):
             return "33cm"
-        elif freq == 1296:
+        elif freq == 1296 or (1240000 <= freq <= 1300000):
             return "23cm"
+        
+        # Microwave bands
+        elif 2300000 <= freq <= 2450000:
+            return "13cm"
+        elif 3300000 <= freq <= 3500000:
+            return "9cm"
+        elif 5650000 <= freq <= 5925000:
+            return "6cm"
+        elif 10000000 <= freq <= 10500000:
+            return "3cm"
+        elif 24000000 <= freq <= 24250000:
+            return "1.25cm"
+        elif 47000000 <= freq <= 47200000:
+            return "6mm"
+        elif 75500000 <= freq <= 81000000:
+            return "4mm"
+        elif 119980000 <= freq <= 120020000:
+            return "2.5mm"
+        elif 142000000 <= freq <= 149000000:
+            return "2mm"
+        elif 241000000 <= freq <= 250000000:
+            return "1mm"
+        
+        # Handle frequency in MHz format (common in logs)
+        elif freq < 1000:
+            if freq == 472:
+                return "630m"
+            elif freq == 1800 or freq == 1900:
+                return "160m"
+            elif freq == 3500 or freq == 3700 or freq == 3800:
+                return "80m"
+            elif freq == 5300:
+                return "60m"
+            elif freq == 7000 or freq == 7100 or freq == 7200:
+                return "40m"
+            elif freq == 10100:
+                return "30m"
+            elif freq == 14000 or freq == 14100 or freq == 14200:
+                return "20m"
+            elif freq == 18100:
+                return "17m"
+            elif freq == 21000 or freq == 21100 or freq == 21200:
+                return "15m"
+            elif freq == 24900:
+                return "12m"
+            elif freq == 28000 or freq == 28100 or freq == 28200:
+                return "10m"
+            elif freq == 50:
+                return "6m"
+            elif freq == 144:
+                return "2m"
+            elif freq == 222:
+                return "1.25m"
+            elif freq == 432:
+                return "70cm"
+            elif freq in [902, 903]:
+                return "33cm"
+            else:
+                return f"{freq}MHz"
         else:
-            return f"{freq}MHz"
-    except:
-        return freq_str
+            return f"{freq}kHz"
+            
+    except ValueError:
+        # Handle non-numeric frequency strings
+        freq_str = freq_str.upper().strip()
+        
+        # Direct band name mappings
+        band_mappings = {
+            '630M': '630m', '160M': '160m', '80M': '80m', '60M': '60m',
+            '40M': '40m', '30M': '30m', '20M': '20m', '17M': '17m',
+            '15M': '15m', '12M': '12m', '10M': '10m', '6M': '6m',
+            '2M': '2m', '1.25M': '1.25m', '70CM': '70cm', '33CM': '33cm',
+            '23CM': '23cm', '13CM': '13cm', '9CM': '9cm', '6CM': '6cm',
+            '3CM': '3cm', '1.25CM': '1.25cm', '6MM': '6mm', '4MM': '4mm',
+            '2.5MM': '2.5mm', '2MM': '2mm', '1MM': '1mm'
+        }
+        
+        return band_mappings.get(freq_str, freq_str)
 
 def auto_select_continents(grids):
     """Automatically determine which continents to include based on grid squares"""

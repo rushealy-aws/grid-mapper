@@ -94,12 +94,40 @@ The script creates separate maps for each band with descriptive filenames:
 
 ## Supported Bands
 
-- **6m** (50 MHz)
-- **2m** (144 MHz) 
-- **1.25m** (222 MHz)
-- **70cm** (432 MHz)
-- **33cm** (902/903 MHz)
-- **23cm** (1296 MHz)
+### HF Bands
+- **630m** (472-479 kHz)
+- **160m** (1.8-2.0 MHz)
+- **80m** (3.5-4.0 MHz)
+- **60m** (5.3-5.4 MHz)
+- **40m** (7.0-7.3 MHz)
+- **30m** (10.1-10.15 MHz)
+- **20m** (14.0-14.35 MHz)
+- **17m** (18.068-18.168 MHz)
+- **15m** (21.0-21.45 MHz)
+- **12m** (24.89-24.99 MHz)
+- **10m** (28.0-29.7 MHz)
+
+### VHF Bands
+- **6m** (50-54 MHz)
+- **2m** (144-148 MHz)
+- **1.25m** (222-225 MHz)
+
+### UHF Bands
+- **70cm** (420-450 MHz)
+- **33cm** (902-928 MHz)
+- **23cm** (1240-1300 MHz)
+
+### Microwave Bands
+- **13cm** (2.3-2.45 GHz)
+- **9cm** (3.3-3.5 GHz)
+- **6cm** (5.65-5.925 GHz)
+- **3cm** (10.0-10.5 GHz)
+- **1.25cm** (24.0-24.25 GHz)
+- **6mm** (47.0-47.2 GHz)
+- **4mm** (75.5-81.0 GHz)
+- **2.5mm** (119.98-120.02 GHz)
+- **2mm** (142-149 GHz)
+- **1mm** (241-250 GHz)
 
 ## Requirements
 
