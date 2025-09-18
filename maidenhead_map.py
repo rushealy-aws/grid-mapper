@@ -62,31 +62,56 @@ def parse_csv_grids(filename):
     
     try:
         with open(filename, 'r') as f:
-            # Try to detect CSV format
-            sample = f.read(1024)
+            # Extract callsign from first line if it contains one
+            first_line = f.readline().strip()
+            # Look for callsign pattern in first line (letters followed by numbers)
+            import re
+            callsign_match = re.search(r'\b([A-Z]{1,2}[0-9][A-Z]{1,3})\b', first_line)
+            if callsign_match:
+                callsign = callsign_match.group(1)
+            
+            # Find the actual header row by looking for multiple field names together
             f.seek(0)
+            lines = f.readlines()
+            header_row_idx = 0
             
-            # Look for common CSV headers
+            for i, line in enumerate(lines):
+                line_lower = line.lower()
+                # Look for multiple header fields in the same line
+                field_count = sum(1 for field in ['date', 'time', 'call', 'grid', 'freq', 'band'] 
+                                if field in line_lower)
+                if field_count >= 3:  # Need at least 3 fields to be a header row
+                    header_row_idx = i
+                    break
+            
+            # Read from the header row
+            f.seek(0)
+            for _ in range(header_row_idx):
+                f.readline()
+            
             reader = csv.DictReader(f)
-            headers = [h.lower() for h in reader.fieldnames] if reader.fieldnames else []
+            headers = [h.lower().strip() for h in reader.fieldnames] if reader.fieldnames else []
             
-            # Common field mappings
+            # Common field mappings - use original case for keys
+            original_headers = reader.fieldnames if reader.fieldnames else []
             freq_fields = ['freq', 'frequency', 'band', 'freq_mhz']
             grid_fields = ['grid', 'gridsquare', 'grid_square', 'their_grid', 'dx_grid']
             call_fields = ['call', 'callsign', 'station_callsign', 'my_call']
             
-            freq_field = next((f for f in freq_fields if f in headers), None)
-            grid_field = next((f for f in grid_fields if f in headers), None)
-            call_field = next((f for f in call_fields if f in headers), None)
+            # Find fields by matching lowercase versions
+            freq_field = None
+            grid_field = None
+            call_field = None
             
-            f.seek(0)
-            reader = csv.DictReader(f)
+            for orig, lower in zip(original_headers, headers):
+                if not freq_field and lower in freq_fields:
+                    freq_field = orig
+                if not grid_field and lower in grid_fields:
+                    grid_field = orig
+                if not call_field and lower in call_fields:
+                    call_field = orig
             
             for row in reader:
-                # Extract callsign if available
-                if call_field and callsign == "Unknown":
-                    callsign = row[call_field].strip()
-                
                 # Extract frequency/band
                 band = "Unknown"
                 if freq_field:
@@ -423,6 +448,22 @@ def create_grid_map(grids, callsign, band, continents=None, output_file=None):
     ax.add_feature(cfeature.LAND, alpha=0.2, color='lightgray')
     ax.add_feature(cfeature.OCEAN, alpha=0.2, color='lightblue')
     
+    # Add grid square outlines for VHF/UHF/microwave bands
+    vhf_uhf_bands = ['6m', '2m', '1.25m', '70cm', '33cm', '23cm', '13cm', '9cm', '6cm', '3cm', 
+                     '1.25cm', '6mm', '4mm', '2.5mm', '2mm', '1mm', '10G', '24G', '47G', '75G', '123G']
+    if band in vhf_uhf_bands or 'GHz' in band:
+        # Draw 1°×2° grid square outlines in light gray
+        for lat in range(int(lat_min) - 1, int(lat_max) + 2):
+            for lon in range(int(lon_min) - 2, int(lon_max) + 3, 2):
+                if lat_min <= lat <= lat_max and lon_min <= lon <= lon_max:
+                    rect = patches.Rectangle((lon, lat), 2, 1,
+                                           linewidth=0.3, 
+                                           edgecolor='lightgray', 
+                                           facecolor='none',
+                                           alpha=0.7,
+                                           transform=ccrs.PlateCarree())
+                    ax.add_patch(rect)
+    
     # Plot grid squares as rectangles
     max_count = max(valid_grids.values())
     for grid, count in valid_grids.items():
@@ -480,7 +521,13 @@ def create_grid_map(grids, callsign, band, continents=None, output_file=None):
                 ha='center', va='center', color='blue',
                 transform=ccrs.PlateCarree())
     
-    ax.gridlines(draw_labels=True, alpha=0.3)
+    # Configure gridlines with whole degree increments
+    import matplotlib.ticker as mticker
+    gl = ax.gridlines(draw_labels=True, alpha=0.3, 
+                     xlocs=range(int(lon_min), int(lon_max) + 1),
+                     ylocs=range(int(lat_min), int(lat_max) + 1))
+    gl.xformatter = mticker.FuncFormatter(lambda x, p: f'{abs(int(x))}°W' if x < 0 else f'{int(x)}°E')
+    gl.yformatter = mticker.FuncFormatter(lambda y, p: f'{int(y)}°N' if y >= 0 else f'{abs(int(y))}°S')
     
     plt.title(f'{callsign} - {band} Band - Maidenhead Grid Squares\n{region_name.replace("_", " ").title()}', 
               fontsize=14, fontweight='bold')
