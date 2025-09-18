@@ -297,82 +297,28 @@ def auto_select_continents(grids):
             continents.add(continent)
     return list(continents)
 
-def get_optimal_bounds(grids):
-    """Calculate optimal map bounds based on actual grid square locations"""
-    if not grids:
-        return (-180, 180, -90, 90)
+def get_continent_bounds(continents):
+    """Get combined lat/lon bounds for selected continents"""
+    if not continents:
+        return (-180, 180, -90, 90)  # World view
     
-    lats = []
-    lons = []
+    min_lon, max_lon = 180, -180
+    min_lat, max_lat = 90, -90
     
-    for grid in grids:
-        bounds = maidenhead_to_bounds(grid)
-        if bounds:
-            lat_min, lat_max, lon_min, lon_max = bounds
-            lats.extend([lat_min, lat_max])
-            lons.extend([lon_min, lon_max])
+    for continent in continents:
+        if continent in CONTINENT_BOUNDS:
+            bounds = CONTINENT_BOUNDS[continent]
+            min_lat = min(min_lat, bounds['lat'][0])
+            max_lat = max(max_lat, bounds['lat'][1])
+            min_lon = min(min_lon, bounds['lon'][0])
+            max_lon = max(max_lon, bounds['lon'][1])
     
-    if not lats or not lons:
-        return (-180, 180, -90, 90)
+    # Add padding
+    lat_padding = (max_lat - min_lat) * 0.1
+    lon_padding = (max_lon - min_lon) * 0.1
     
-    min_lat, max_lat = min(lats), max(lats)
-    min_lon, max_lon = min(lons), max(lons)
-    
-    # Add padding based on the span
-    lat_span = max_lat - min_lat
-    lon_span = max_lon - min_lon
-    
-    # Use smaller padding for regional views
-    lat_padding = max(lat_span * 0.15, 2.0)  # At least 2 degrees
-    lon_padding = max(lon_span * 0.15, 3.0)  # At least 3 degrees
-    
-    return (min_lon - lon_padding, max_lon + lon_padding,
+    return (min_lon - lon_padding, max_lon + lon_padding, 
             min_lat - lat_padding, max_lat + lat_padding)
-
-def get_region_name(lon_min, lon_max, lat_min, lat_max):
-    """Generate a descriptive region name based on bounds"""
-    # North America regions
-    if -170 <= lon_min and lon_max <= -30 and 10 <= lat_min and lat_max <= 85:
-        if lon_min >= -100 and lat_min >= 35:
-            return "northeastern_north_america"
-        elif lon_min >= -100 and lat_max <= 45:
-            return "southeastern_north_america"
-        elif lon_max <= -95 and lat_min >= 35:
-            return "northwestern_north_america"
-        elif lon_max <= -95 and lat_max <= 45:
-            return "southwestern_north_america"
-        elif lat_min >= 45:
-            return "northern_north_america"
-        elif lat_max <= 35:
-            return "southern_north_america"
-        elif lon_min >= -100:
-            return "eastern_north_america"
-        elif lon_max <= -95:
-            return "western_north_america"
-        else:
-            return "central_north_america"
-    
-    # Europe regions
-    elif -15 <= lon_min and lon_max <= 45 and 35 <= lat_min and lat_max <= 75:
-        if lat_min >= 55:
-            return "northern_europe"
-        elif lat_max <= 50:
-            return "southern_europe"
-        elif lon_min >= 15:
-            return "eastern_europe"
-        elif lon_max <= 5:
-            return "western_europe"
-        else:
-            return "central_europe"
-    
-    # Use continent names for larger areas
-    continents = auto_select_continents(list(grid_counts.keys()) if 'grid_counts' in locals() else [])
-    if len(continents) == 1:
-        return continents[0]
-    elif continents:
-        return '_'.join(continents)
-    else:
-        return "regional"
 
 def filter_grids_by_continents(grids, continents):
     """Filter grid squares to only include those in specified continents"""
@@ -404,11 +350,8 @@ def create_grid_map(grids, callsign, band, continents=None, output_file=None):
         print(f"No valid grid squares found for {band} in selected continents")
         return
     
-    # Get optimal bounds based on actual grid locations
-    lon_min, lon_max, lat_min, lat_max = get_optimal_bounds(valid_grids.keys())
-    
-    # Generate region name based on bounds
-    region_name = get_region_name(lon_min, lon_max, lat_min, lat_max)
+    # Get map bounds for selected continents
+    lon_min, lon_max, lat_min, lat_max = get_continent_bounds(continents)
     
     fig = plt.figure(figsize=(14, 10))
     ax = plt.axes(projection=ccrs.PlateCarree())
@@ -439,16 +382,16 @@ def create_grid_map(grids, callsign, band, continents=None, output_file=None):
                                    transform=ccrs.PlateCarree())
             ax.add_patch(rect)
     
-    # Add grid field labels - only show if they fit in the visible area
+    # Add grid field labels
     field_centers = {}
     for grid in valid_grids.keys():
         field = grid[:2]
         if field not in field_centers:
-            field_lon_center = (ord(field[0]) - ord('A')) * 20 - 180 + 10
-            field_lat_center = (ord(field[1]) - ord('A')) * 10 - 90 + 5
+            lon_center = (ord(field[0]) - ord('A')) * 20 - 180 + 10
+            lat_center = (ord(field[1]) - ord('A')) * 10 - 90 + 5
             # Only show labels if they're in the visible area
-            if lon_min <= field_lon_center <= lon_max and lat_min <= field_lat_center <= lat_max:
-                field_centers[field] = (field_lon_center, field_lat_center)
+            if lon_min <= lon_center <= lon_max and lat_min <= lat_center <= lat_max:
+                field_centers[field] = (lon_center, lat_center)
     
     for field, (lon, lat) in field_centers.items():
         ax.text(lon, lat, field, fontsize=12, fontweight='bold',
@@ -457,7 +400,8 @@ def create_grid_map(grids, callsign, band, continents=None, output_file=None):
     
     ax.gridlines(draw_labels=True, alpha=0.3)
     
-    plt.title(f'{callsign} - {band} Band - Maidenhead Grid Squares\n{region_name.replace("_", " ").title()}', 
+    continent_str = ', '.join(continents) if continents else 'World'
+    plt.title(f'{callsign} - {band} Band - Maidenhead Grid Squares\n{continent_str}', 
               fontsize=14, fontweight='bold')
     
     # Add colorbar
@@ -470,7 +414,8 @@ def create_grid_map(grids, callsign, band, continents=None, output_file=None):
     plt.tight_layout()
     
     if not output_file:
-        output_file = f"{callsign}_{band}_{region_name}_maidenhead_map.png"
+        continent_suffix = '_'.join(continents) if continents else 'world'
+        output_file = f"{callsign}_{band}_{continent_suffix}_maidenhead_map.png"
     
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
     print(f"Map saved as {output_file}")
