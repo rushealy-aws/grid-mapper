@@ -3,6 +3,7 @@ import re
 import csv
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.patheffects as path_effects
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from collections import Counter, defaultdict
@@ -404,6 +405,9 @@ def create_grid_map(grids, callsign, band, continents=None, output_file=None):
         print(f"No valid grid squares found for {band} in selected continents")
         return
     
+    # Check if we have 6-digit grids (microwave contest)
+    has_6digit_grids = any(len(grid) == 6 for grid in valid_grids.keys())
+    
     # Get optimal bounds based on actual grid locations
     lon_min, lon_max, lat_min, lat_max = get_optimal_bounds(valid_grids.keys())
     
@@ -438,6 +442,27 @@ def create_grid_map(grids, callsign, band, continents=None, output_file=None):
                                    alpha=0.8,
                                    transform=ccrs.PlateCarree())
             ax.add_patch(rect)
+    
+    # Add 4-digit grid labels at lower-left corner for microwave contests with 6-digit grids
+    if has_6digit_grids:
+        grid_4digit_positions = {}
+        for grid in valid_grids.keys():
+            if len(grid) >= 4:
+                grid_4digit = grid[:4]
+                if grid_4digit not in grid_4digit_positions:
+                    bounds = maidenhead_to_bounds(grid_4digit)
+                    if bounds:
+                        grid_lat_min, grid_lat_max, grid_lon_min, grid_lon_max = bounds
+                        # Position at lower-left corner with small offset
+                        label_lon = grid_lon_min + (grid_lon_max - grid_lon_min) * 0.05
+                        label_lat = grid_lat_min + (grid_lat_max - grid_lat_min) * 0.05
+                        grid_4digit_positions[grid_4digit] = (label_lon, label_lat)
+        
+        for grid_4digit, (lon, lat) in grid_4digit_positions.items():
+            ax.text(lon, lat, grid_4digit, fontsize=8, fontweight='bold',
+                   ha='left', va='bottom', color='black',
+                   path_effects=[path_effects.withStroke(linewidth=2, foreground='white')],
+                   transform=ccrs.PlateCarree())
     
     # Add grid field labels - only show if they fit in the visible area
     field_centers = {}
