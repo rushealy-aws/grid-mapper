@@ -447,6 +447,7 @@ def create_grid_map(grids, callsign, band, continents=None, output_file=None):
     ax.add_feature(cfeature.BORDERS, linewidth=0.3)
     ax.add_feature(cfeature.LAND, alpha=0.2, color='lightgray')
     ax.add_feature(cfeature.OCEAN, alpha=0.2, color='lightblue')
+    ax.add_feature(cfeature.LAKES, edgecolor='blue', facecolor='none', linewidth=0.5)
     
     # Add grid square outlines for VHF/UHF/microwave bands
     vhf_uhf_bands = ['6m', '2m', '1.25m', '70cm', '33cm', '23cm', '13cm', '9cm', '6cm', '3cm', 
